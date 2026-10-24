@@ -1,0 +1,23 @@
+# Salin jadi kuliah/matkul.toml (setup.sh melakukannya). matkul.toml itu pribadi
+# dan tidak ikut git.
+#
+# Satu tabel per kode matkul -- kodenya awalan nama file ("MK1 - P07 - ...").
+#
+#   nama    : nama lengkap, buat header transkrip.
+#   istilah : istilah yang sering muncul, dikirim ke Whisper sebagai
+#             initial_prompt biar ejaannya bener ("WACC", bukan "wak").
+#             Pisah koma dan pendek aja: Whisper cuma baca ~200 token, dan
+#             daftar yang kepanjangan bisa bikin dia nulis istilahnya sendiri
+#             di bagian yang hening.
+#
+# Kode yang nggak ada di sini tetap diproses, cuma tanpa nama lengkap & istilah.
+# Ganti istilah = transkrip matkul itu ditranskripsi ulang di run berikutnya
+# (pakai --force kalau outputnya udah ada).
+
+[MK1]
+nama = "Manajemen Keuangan 1"
+istilah = "NPV, IRR, WACC, time value of money, present value, cash flow, capital budgeting, payback period, cost of capital"
+
+[MK2]
+nama = ""
+istilah = ""

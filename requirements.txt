@@ -1,0 +1,34 @@
+# One venv for both pipelines. Generated from the working environment; pinned
+# versions live in the venv itself.
+#
+#   ./setup.sh        (creates .venv, installs this file, runs the doctor)
+#
+# By hand: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+# System packages also required: ffmpeg, pandoc, and pango (for PDFs) --
+# apt on Linux/WSL, `brew install ffmpeg pandoc pango` on macOS.
+#
+# Platforms: Linux/WSL2 (NVIDIA GPU optional) and macOS on Apple Silicon, Python
+# 3.10-3.13 (whisperx requires <3.14). On macOS torch is the normal wheel (no CUDA)
+# and transcription runs on the CPU. Intel Macs cannot install this: whisperx pins
+# torch~=2.8, and PyTorch stopped publishing Intel-Mac wheels after 2.2.2.
+# Every package below is pure Python or ships macOS arm64 wheels (checked on PyPI).
+
+# --- shared ---
+numpy
+
+# --- batch pass (core/pdf.py, batch/pipeline.py) ---
+whisperx
+pyannote.audio
+torch
+weasyprint
+google-genai
+
+# --- realtime server ---
+anthropic        # live assistant (realtime/brain.py)
+faster-whisper
+fastapi
+uvicorn[standard]
+websockets
+
+# --- Windows-side capture client, installed with the WINDOWS python ---
+#   py -m pip install soundcard numpy websockets

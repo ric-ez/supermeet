@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>supermeet</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel-2:#1e222b; --line:#272c37;
+    --fg:#e6e8ee; --dim:#9aa3b2; --faint:#6b7382;
+    --accent:#6ea8fe; --hot:#ff6b6b; --warm:#ffc861; --good:#5dd4a0;
+    --radius:12px;
+    /* One knob for the reading size of transcript + panels. */
+    --read:17px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:20;
+  }
+  .brand{font-weight:700; letter-spacing:-.02em; margin-right:4px}
+  .brand span{color:var(--accent)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+  .dot.on{background:var(--good); box-shadow:0 0 0 3px rgba(93,212,160,.15)}
+  .dot.rec{background:var(--hot); animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.35}}
+  .meta{color:var(--dim); font-size:13px; display:flex; gap:14px; flex-wrap:wrap}
+  .meta b{color:var(--fg); font-weight:600; font-variant-numeric:tabular-nums}
+  .spacer{flex:1}
+
+  button{
+    font:inherit; font-weight:600; color:var(--fg); cursor:pointer;
+    background:var(--panel-2); border:1px solid var(--line);
+    border-radius:9px; padding:8px 14px; transition:.15s;
+  }
+  button:hover:not(:disabled){border-color:var(--accent); color:#fff}
+  button:disabled{opacity:.4; cursor:not-allowed}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#0b1220}
+  button.danger{background:var(--hot); border-color:var(--hot); color:#2a0a0a}
+  button.ghost{padding:5px 10px; font-size:12.5px; font-weight:500; color:var(--dim)}
+
+  main{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; padding:14px; align-items:start}
+  @media(max-width:900px){
+    main{grid-template-columns:1fr; padding:12px}
+    .col.right{order:-1}
+  }
+  /* Transcribe-only session: no AI panels, transcript gets the whole width. */
+  body.no-ai main{grid-template-columns:minmax(0,1fr)}
+  body.no-ai .col.right, body.no-ai .ai-only{display:none}
+  body.no-ai #transcript{max-width:75ch; margin:0 auto}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:14px; overflow:hidden}
+  .card > h2{
+    margin:0; padding:11px 14px; font-size:12px; font-weight:700;
+    letter-spacing:.09em; text-transform:uppercase; color:var(--faint);
+    border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px;
+  }
+  .card > h2 .spacer{flex:1}
+  .card .body{padding:14px}
+  .empty{color:var(--faint); font-style:italic; padding:14px; font-size:14px}
+
+  #transcript{max-height:calc(100vh - 210px); overflow-y:auto; padding:6px 16px 16px}
+  @media(max-width:900px){#transcript{max-height:52vh}}
+  .utt{padding:12px 0; border-bottom:1px solid rgba(255,255,255,.045)}
+  .utt:last-child{border-bottom:none}
+  .ts{color:var(--faint); font-size:12.5px; font-variant-numeric:tabular-nums; font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .utt p{margin:3px 0 0; font-size:var(--read); line-height:1.7; letter-spacing:.005em}
+  #partial{color:var(--dim); font-style:italic; padding:12px 0; min-height:1.2em; font-size:var(--read); line-height:1.7}
+  #partial::after{content:"▍"; color:var(--accent); animation:pulse 1s steps(2) infinite}
+  #partial:empty::after{content:""}
+
+  ul{margin:0; padding-left:1.15em}
+  li{margin-bottom:.6em; font-size:var(--read); line-height:1.65}
+  li:last-child{margin-bottom:0}
+
+  .q{border-left:3px solid var(--accent); background:var(--panel-2); border-radius:0 9px 9px 0; padding:13px 15px; margin-bottom:11px}
+  .q:last-child{margin-bottom:0}
+  .q p{margin:0 0 6px; font-weight:600; font-size:var(--read); line-height:1.6}
+  .q small{color:var(--dim); display:block; margin-bottom:9px; font-size:14px; line-height:1.55}
+  #summary p{font-size:var(--read); line-height:1.7}
+  .action{display:flex; gap:10px; padding:11px 0; border-bottom:1px solid rgba(255,255,255,.045);
+    font-size:var(--read); line-height:1.6}
+  .action:last-child{border-bottom:none}
+  .action .mark{color:var(--warm); flex:none}
+  .action .who{color:var(--faint); font-size:13.5px}
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translate(-50%,80px);
+    background:var(--good); color:#08251a; font-weight:600; font-size:14px;
+    padding:9px 18px; border-radius:999px; transition:.25s; pointer-events:none; z-index:50;
+  }
+  .toast.show{transform:translate(-50%,0)}
+
+  /* mode picker */
+  .scrim{
+    position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
+    padding:20px; background:rgba(8,10,14,.72); backdrop-filter:blur(3px);
+  }
+  .scrim[hidden]{display:none}
+  .sheet{
+    width:min(520px,100%); background:var(--panel); border:1px solid var(--line);
+    border-radius:16px; padding:20px; box-shadow:0 24px 60px rgba(0,0,0,.5);
+  }
+  .sheet h3{margin:0 0 4px; font-size:19px; letter-spacing:-.01em}
+  .sheet .sub{margin:0 0 16px; color:var(--dim); font-size:14px}
+  .pick{
+    display:block; width:100%; text-align:left; padding:14px 16px; margin-bottom:10px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:12px; font-weight:500;
+  }
+  .pick:hover:not(:disabled){border-color:var(--accent); background:#232836}
+  .pick b{display:block; font-size:16px; font-weight:700; margin-bottom:3px}
+  .pick span{display:block; color:var(--dim); font-size:13.5px; line-height:1.5; font-weight:400}
+  .sheet .cancel{width:100%; margin-top:2px; color:var(--dim); background:transparent; border-color:transparent}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">super<span>meet</span></div>
+  <div class="dot" id="dot"></div>
+  <div class="meta">
+    <span id="stateLabel">menyambung…</span>
+    <span>⏱ <b id="clock">00:00:00</b></span>
+    <span>🎙 <b id="uttCount">0</b></span>
+    <span>🔌 <b id="ingest">0</b></span>
+    <span class="ai-only">💸 <b id="cost">$0.00</b></span>
+  </div>
+  <div class="spacer"></div>
+  <a class="ghost" href="/kuliah" style="color:var(--dim);font-size:12.5px;text-decoration:none">📚 Kuliah</a>
+  <button id="sysBtn" class="ghost">🔊 Audio sistem (host)</button>
+  <button id="micBtn" class="ghost">🎤 Mic device ini</button>
+  <button id="recBtn" class="primary">● Mulai</button>
+</header>
+
+<main>
+  <div class="col">
+    <div class="card">
+      <h2>Transkrip Live <div class="spacer"></div>
+        <button class="ghost" id="copyAllBtn">⧉ salin semua</button>
+        <button class="ghost" id="followBtn">↓ ikut scroll</button></h2>
+      <div id="transcript"><div class="empty">Belum ada suara masuk.</div><div id="partial"></div></div>
+    </div>
+  </div>
+
+  <div class="col right">
+    <div class="card">
+      <h2>⭐ Pertanyaan buat Host <div class="spacer"></div>
+        <button class="ghost" id="qRefresh">↻ refresh</button></h2>
+      <div class="body" id="questions"><div class="empty" style="padding:0">Nunggu bahan obrolan…</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Ringkasan Berjalan</h2>
+      <div class="body" id="summary"><div class="empty" style="padding:0">Belum ada.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>⚡ Action Items</h2>
+      <div class="body" id="actions"><div class="empty" style="padding:0">Belum ada.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Masih Menggantung</h2>
+      <div class="body" id="threads"><div class="empty" style="padding:0">Belum ada.</div></div>
+    </div>
+  </div>
+</main>
+
+<div class="scrim" id="modePicker" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="modeTitle">
+    <h3 id="modeTitle">Mulai rekaman</h3>
+    <p class="sub">Mau jalan dengan mode apa?</p>
+    <button class="pick" data-ai="0">
+      <b>📝 Transkrip aja</b>
+      <span>Cuma speech-to-text live. Tanpa ringkasan, pertanyaan, atau action items — dan tanpa biaya API.</span>
+    </button>
+    <button class="pick" data-ai="1">
+      <b>✨ Transkrip + asisten</b>
+      <span>Transkrip plus ringkasan berjalan, pertanyaan buat host, action items, dan hal yang masih menggantung.</span>
+    </button>
+    <button class="cancel" id="modeCancel">Batal</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = s => [s/3600, s/60%60, s%60].map(n => String(Math.floor(n)).padStart(2,"0")).join(":");
+
+let ws, recording = false, follow = true, elapsed = 0, tick = null;
+// Kept alongside the DOM so "salin semua" copies clean text, not markup.
+let uttLog = [];
+
+/* navigator.clipboard is undefined on plain http over the LAN, which is exactly
+   how this page is usually opened. Fall back to a scratch textarea. */
+async function copyText(text){
+  try {
+    if(navigator.clipboard?.writeText){ await navigator.clipboard.writeText(text); return true; }
+  } catch {}
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.cssText = "position:fixed;top:0;left:-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);   // iOS Safari needs the range
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch {}
+  ta.remove();
+  return ok;
+}
+
+/* ---------- state socket ---------- */
+function connect(){
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}/ws/client`);
+  ws.onopen = () => $("stateLabel").textContent = "siap";
+  ws.onclose = () => { $("stateLabel").textContent = "terputus — menyambung ulang…"; setTimeout(connect, 1500); };
+  ws.onmessage = e => handle(JSON.parse(e.data));
+}
+const send = o => ws?.readyState === 1 && ws.send(JSON.stringify(o));
+
+function handle(m){
+  switch(m.type){
+    case "status":   return applyStatus(m);
+    case "restore":  return restore(m.state);
+    case "partial":  return setPartial(m.text);
+    case "final":    setPartial(""); return addUtterance(m.utterance);
+    case "summary":  return renderSummary(m.data, m.cost);
+    case "questions":return renderQuestions(m.data.questions, m.cost);
+    case "stopped":  return toast("Tersimpan: " + m.session_id);
+    case "handoff":  return toast("Pipeline arsip: " + m.state);
+    case "brain_error": return toast("Claude: " + m.detail);
+    case "waiting":      return toast("⏳ " + m.detail);
+    case "start_failed": return toast("Gagal mulai: " + m.detail);
+  }
+}
+
+function applyStatus(m){
+  recording = m.recording;
+  elapsed = m.elapsed || 0;
+  $("uttCount").textContent = m.utterances ?? 0;
+  $("ingest").textContent = m.ingest_connected ?? 0;
+  $("cost").textContent = "$" + (m.cost ?? 0).toFixed(2);
+  if(m.ai != null) document.body.classList.toggle("no-ai", !m.ai);
+  $("dot").className = "dot " + (recording ? "rec" : (m.ingest_connected ? "on" : ""));
+  $("stateLabel").textContent = recording ? "merekam" : (m.ingest_connected ? "audio siap" : "nunggu audio");
+  $("recBtn").textContent = recording ? "■ Selesai" : "● Mulai";
+  $("recBtn").className = recording ? "danger" : "primary";
+  clearInterval(tick);
+  if(recording) tick = setInterval(() => $("clock").textContent = fmt(++elapsed), 1000);
+  $("clock").textContent = fmt(elapsed);
+}
+
+function restore(s){
+  $("transcript").querySelectorAll(".utt").forEach(n => n.remove());
+  uttLog = [];
+  if(s.ai != null) document.body.classList.toggle("no-ai", !s.ai);
+  s.utterances.forEach(addUtterance);
+  if(s.summary) renderSummary(s.summary);
+  if(s.questions?.length) renderQuestions(s.questions);
+}
+
+/* ---------- transcript ---------- */
+function addUtterance(u){
+  const empty = $("transcript").querySelector(".empty");
+  if(empty) empty.remove();
+  uttLog.push(u);
+  const div = document.createElement("div");
+  div.className = "utt";
+  div.innerHTML = `<span class="ts">${fmt(u.start)}</span><p>${esc(u.text)}</p>`;
+  $("transcript").insertBefore(div, $("partial"));
+  if(follow) $("transcript").scrollTop = $("transcript").scrollHeight;
+}
+function setPartial(t){
+  $("partial").textContent = t || "";
+  if(follow) $("transcript").scrollTop = $("transcript").scrollHeight;
+}
+$("transcript").addEventListener("scroll", () => {
+  const el = $("transcript");
+  follow = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+  $("followBtn").style.opacity = follow ? .4 : 1;
+});
+$("followBtn").onclick = () => { follow = true; $("transcript").scrollTop = $("transcript").scrollHeight; };
+
+$("copyAllBtn").onclick = async () => {
+  if(!uttLog.length) return toast("Belum ada transkrip buat disalin");
+  const text = uttLog.map(u => `[${fmt(u.start)}] ${u.text}`).join("\n");
+  const ok = await copyText(text);
+  toast(ok ? `Transkrip disalin (${uttLog.length} baris)` : "Gagal menyalin — blokir clipboard");
+};
+
+/* ---------- panels ---------- */
+function renderSummary(d, cost){
+  if(cost != null) $("cost").textContent = "$" + cost.toFixed(2);
+  $("summary").innerHTML = (d.summary ? `<p style="margin:0 0 10px">${esc(d.summary)}</p>` : "")
+    + (d.key_points?.length ? `<ul>${d.key_points.map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : "")
+    || `<div class="empty" style="padding:0">Belum ada.</div>`;
+
+  $("actions").innerHTML = d.action_items?.length
+    ? d.action_items.map(a => {
+        const who = [a.owner, a.due].filter(Boolean).join(" · ");
+        return `<div class="action"><span class="mark">▸</span><div>${esc(a.text)}
+          ${who ? `<div class="who">${esc(who)}</div>` : ""}</div></div>`;
+      }).join("")
+    : `<div class="empty" style="padding:0">Belum ada.</div>`;
+
+  $("threads").innerHTML = d.open_threads?.length
+    ? `<ul>${d.open_threads.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`
+    : `<div class="empty" style="padding:0">Belum ada.</div>`;
+}
+
+function renderQuestions(qs, cost){
+  if(cost != null) $("cost").textContent = "$" + cost.toFixed(2);
+  $("questions").innerHTML = qs?.length
+    ? qs.map(q => `<div class="q"><p>${esc(q.text)}</p><small>${esc(q.why)}</small>
+        <button class="ghost" data-copy="${esc(q.text)}">salin</button></div>`).join("")
+    : `<div class="empty" style="padding:0">Belum ada bahan yang cukup.</div>`;
+}
+$("questions").addEventListener("click", async e => {
+  const t = e.target.closest("[data-copy]");
+  if(!t) return;
+  const ok = await copyText(t.dataset.copy);
+  toast(ok ? "Pertanyaan disalin" : "Gagal menyalin — blokir clipboard");
+});
+$("qRefresh").onclick = () => { send({cmd:"refresh", kind:"questions"}); toast("Minta pertanyaan baru…"); };
+
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+/* ---------- record button + mode picker ---------- */
+function openModePicker(){ $("modePicker").hidden = false; }
+function closeModePicker(){ $("modePicker").hidden = true; }
+
+$("recBtn").onclick = () => {
+  if(recording) send({cmd:"stop", handoff:true});
+  else openModePicker();
+};
+
+$("modePicker").addEventListener("click", e => {
+  if(e.target === $("modePicker")) return closeModePicker();   // click the scrim
+  const pick = e.target.closest("[data-ai]");
+  if(!pick) return;
+  const ai = pick.dataset.ai === "1";
+  closeModePicker();
+  // Paint the layout now; the server confirms it on the next status frame.
+  document.body.classList.toggle("no-ai", !ai);
+  if(!ai){
+    $("questions").innerHTML = $("summary").innerHTML = $("actions").innerHTML =
+      $("threads").innerHTML = `<div class="empty" style="padding:0">Belum ada.</div>`;
+  }
+  send({cmd:"start", title:null, ai});
+  toast(ai ? "Mulai — transkrip + asisten" : "Mulai — transkrip aja");
+});
+$("modeCancel").onclick = closeModePicker;
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape" && !$("modePicker").hidden) closeModePicker();
+});
+
+/* ---------- browser audio capture -> /ws/ingest ----------
+   Two sources, mixable:
+     mic     — this device's microphone (in-person meeting, or your own voice)
+     system  — Chrome's screen-share audio, i.e. what comes out of the speakers.
+               This is how we hear the HOST on an online call without needing a
+               native capture client. Windows Chrome only offers system audio on
+               "Entire Screen", not on a single window. */
+
+const WORKLET = `
+class Pump extends AudioWorkletProcessor {
+  constructor(){ super(); this.buf = []; this.n = 0; }
+  process(inputs){
+    const ch = inputs[0][0];
+    if(!ch) return true;
+    this.buf.push(new Float32Array(ch)); this.n += ch.length;
+    if(this.n >= 1600){
+      const out = new Float32Array(this.n); let o = 0;
+      for(const b of this.buf){ out.set(b, o); o += b.length; }
+      this.buf = []; this.n = 0;
+      this.port.postMessage(out, [out.buffer]);
+    }
+    return true;
+  }
+}
+registerProcessor('pump', Pump);`;
+
+const cap = { ctx:null, ws:null, node:null, bus:null, sources:new Map() };
+
+async function ensureCapture(){
+  if(cap.ctx) return;
+  // Ask for 16k up front and let the browser resample for us.
+  cap.ctx = new AudioContext({sampleRate:16000});
+  // Made after awaiting the permission prompt, so Safari may start it suspended
+  // and the worklet would pump nothing. Not awaited: a refusal never settles.
+  cap.ctx.resume().catch(() => {});
+  await cap.ctx.audioWorklet.addModule(
+    URL.createObjectURL(new Blob([WORKLET], {type:"text/javascript"})));
+
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  cap.ws = new WebSocket(`${proto}://${location.host}/ws/ingest`);
+  cap.ws.binaryType = "arraybuffer";
+  await new Promise((ok, bad) => { cap.ws.onopen = ok; cap.ws.onerror = () => bad(new Error("websocket ditolak")); });
+
+  cap.bus = cap.ctx.createGain();
+  cap.node = new AudioWorkletNode(cap.ctx, "pump");
+  cap.bus.connect(cap.node);
+
+  // The worklet only runs while it is connected downstream, but routing it to
+  // the speakers would play the mic (and the call audio) straight back out —
+  // echo, and a feedback loop on system capture. Silent sink instead.
+  const mute = cap.ctx.createGain();
+  mute.gain.value = 0;
+  cap.node.connect(mute);
+  mute.connect(cap.ctx.destination);
+
+  const ratio = cap.ctx.sampleRate / 16000;  // 1 when the browser honoured 16k
+  cap.node.port.onmessage = e => {
+    if(cap.ws.readyState !== 1) return;
+    let f = e.data;
+    if(ratio > 1.01){                        // Safari sometimes ignores sampleRate
+      const out = new Float32Array(Math.floor(f.length / ratio));
+      for(let i = 0; i < out.length; i++) out[i] = f[Math.floor(i * ratio)];
+      f = out;
+    }
+    const pcm = new Int16Array(f.length);
+    for(let i = 0; i < f.length; i++) pcm[i] = Math.max(-1, Math.min(1, f[i])) * 32767;
+    cap.ws.send(pcm.buffer);
+  };
+}
+
+function addSource(name, stream){
+  const src = cap.ctx.createMediaStreamSource(stream);
+  src.connect(cap.bus);
+  cap.sources.set(name, {stream, src});
+  holdWake(true);
+  // If the user stops the share from Chrome's own bar, drop the source too.
+  stream.getTracks().forEach(t => t.addEventListener("ended", () => removeSource(name)));
+  paintCaptureButtons();
+}
+
+function removeSource(name){
+  const s = cap.sources.get(name);
+  if(!s) return;
+  try { s.src.disconnect(); } catch {}
+  s.stream.getTracks().forEach(t => t.stop());
+  cap.sources.delete(name);
+  if(cap.sources.size === 0) teardownCapture();
+  paintCaptureButtons();
+}
+
+function teardownCapture(){
+  holdWake(false);
+  try { cap.ws?.close(); } catch {}
+  try { cap.ctx?.close(); } catch {}
+  cap.ctx = cap.ws = cap.node = cap.bus = null;
+  cap.sources.clear();
+  paintCaptureButtons();
+}
+
+/* iPad/phone: once the screen auto-locks, the OS suspends the page and the mic
+   goes with it, mid-meeting. The lock is dropped whenever the tab is hidden,
+   so take it back on return. */
+let wake = null;
+async function holdWake(on){
+  try {
+    if(on && !wake && navigator.wakeLock){
+      wake = await navigator.wakeLock.request("screen");
+      wake.addEventListener("release", () => { wake = null; });
+    } else if(!on && wake){
+      await wake.release();
+    }
+  } catch {}
+}
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "visible" && cap.sources.size) holdWake(true);
+});
+
+function paintCaptureButtons(){
+  const mic = cap.sources.has("mic"), sys = cap.sources.has("system");
+  $("micBtn").textContent = mic ? "🔴 Mic aktif — stop" : "🎤 Mic device ini";
+  $("sysBtn").textContent = sys ? "🔴 Audio sistem aktif — stop" : "🔊 Audio sistem (host)";
+}
+
+async function startMic(){
+  if(!navigator.mediaDevices?.getUserMedia)
+    throw new Error("browser blokir mic — buka lewat HTTPS atau localhost");
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio:{ channelCount:1, echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+  });
+  await ensureCapture();
+  addSource("mic", stream);
+  toast("Mic streaming");
+}
+
+async function startSystem(){
+  if(!navigator.mediaDevices?.getDisplayMedia)
+    throw new Error("browser ini nggak support capture audio sistem");
+  // Chrome needs a video track requested for system audio to be offered at all;
+  // we never render it.
+  const stream = await navigator.mediaDevices.getDisplayMedia({ video:true, audio:true });
+  if(stream.getAudioTracks().length === 0){
+    stream.getTracks().forEach(t => t.stop());
+    throw new Error("nggak ada audio — pilih 'Entire Screen' dan centang 'Share system audio'");
+  }
+  stream.getVideoTracks().forEach(t => t.stop());  // audio keeps flowing
+  await ensureCapture();
+  addSource("system", stream);
+  toast("Audio sistem streaming — host kedengeran");
+}
+
+$("micBtn").onclick = async () => {
+  try { cap.sources.has("mic") ? removeSource("mic") : await startMic(); }
+  catch(e){ toast("Mic gagal: " + e.message); }
+};
+// A web page on iOS/iPadOS can never hear other apps. Recent iPadOS does have
+// getDisplayMedia, so feature-testing it is not enough: the button would open
+// a screen share that never carries the host's audio. iPadOS Safari claims to
+// be a Mac; the touch points give it away. Android has no getDisplayMedia.
+// (No mediaDevices at all means plain http — keep the button so its error
+// says to use HTTPS.)
+const appleTouch = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+if(appleTouch || (navigator.mediaDevices && !navigator.mediaDevices.getDisplayMedia))
+  $("sysBtn").hidden = true;
+$("sysBtn").onclick = async () => {
+  try { cap.sources.has("system") ? removeSource("system") : await startSystem(); }
+  catch(e){ toast(e.message); }
+};
+
+connect();
+</script>
+</body>
+</html>

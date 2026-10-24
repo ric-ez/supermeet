@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>supermeet · Kuliah</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel-2:#1e222b; --line:#272c37;
+    --fg:#e6e8ee; --dim:#9aa3b2; --faint:#6b7382;
+    --accent:#6ea8fe; --hot:#ff6b6b; --warm:#ffc861; --good:#5dd4a0;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg); overflow-x:hidden;
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:20;
+  }
+  .brand{font-weight:700; letter-spacing:-.02em}
+  .brand span{color:var(--accent)}
+  .spacer{flex:1}
+  a{color:var(--accent)}
+  header a.back{color:var(--dim); font-size:13px; text-decoration:none}
+  main{max-width:760px; margin:0 auto; padding:14px 16px 40px; display:flex; flex-direction:column; gap:14px}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px}
+  h2{margin:0 0 10px; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px}
+  h3{margin:12px 0 4px; font-size:14px; color:var(--dim); font-weight:600}
+  .dim{color:var(--dim)} .faint{color:var(--faint)} .small{font-size:13px}
+
+  button{
+    font:inherit; font-weight:600; color:var(--fg); cursor:pointer;
+    background:var(--panel-2); border:1px solid var(--line);
+    border-radius:9px; padding:8px 14px; transition:.15s;
+  }
+  button:hover:not(:disabled){border-color:var(--accent); color:#fff}
+  button:disabled{opacity:.4; cursor:not-allowed}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#0b1220}
+  button.danger{background:var(--hot); border-color:var(--hot); color:#2a0a0a}
+  button.ghost{padding:5px 10px; font-size:12.5px; font-weight:500; color:var(--dim)}
+
+  input,select{
+    font:inherit; font-size:16px; color:var(--fg); background:var(--panel-2);
+    border:1px solid var(--line); border-radius:8px; padding:7px 9px; min-width:0;
+  }
+  input:focus,select:focus{outline:none; border-color:var(--accent)}
+
+  #drop{
+    border:2px dashed var(--line); border-radius:var(--radius); padding:26px 14px;
+    text-align:center; color:var(--dim); transition:.15s;
+  }
+  #drop.over{border-color:var(--accent); background:rgba(110,168,254,.06); color:var(--fg)}
+  #drop p{margin:0 0 10px}
+  .bar{height:6px; background:var(--panel-2); border-radius:3px; overflow:hidden}
+  .bar>i{display:block; height:100%; width:0; background:var(--accent); transition:width .2s}
+  .bar.ok>i{background:var(--good)} .bar.bad>i{background:var(--hot)}
+  .up{padding:8px 0; border-top:1px solid var(--line)}
+  .up:first-child{border-top:0}
+  .up .nm{word-break:break-all; font-size:14px}
+  .res{font-size:13px; margin-top:3px; display:flex; flex-wrap:wrap; gap:4px 10px}
+  .tag-ok{color:var(--good)} .tag-warm{color:var(--warm)} .tag-bad{color:var(--hot)} .tag-dim{color:var(--faint)}
+
+  .un{padding:10px 0; border-top:1px solid var(--line)}
+  .un:first-of-type{border-top:0}
+  .un .nm{word-break:break-all; font-size:14px; margin-bottom:6px}
+  .form{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+  .form input[type=number]{width:72px}
+  .form .kode{width:92px}
+  .form label{font-size:12.5px; color:var(--dim); display:flex; align-items:center; gap:4px}
+  .err{color:var(--hot); font-size:13px; margin-top:4px}
+
+  .grp{margin-top:6px}
+  .grp>.gh{font-weight:700; margin:12px 0 2px}
+  .grp>.gh .nama{font-weight:400; color:var(--dim); font-size:14px}
+  .mt{border-top:1px solid var(--line); padding:7px 0}
+  .mt .row{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .mt .row .main{flex:1 1 180px; min-width:0}
+  .mt .row .toggle{cursor:pointer; user-select:none}
+  .chip{font-size:12px; font-weight:600; padding:2px 9px; border-radius:99px; border:1px solid var(--line); white-space:nowrap}
+  .chip.todo{color:var(--accent); border-color:var(--accent)}
+  .chip.done{color:var(--good); border-color:var(--good)}
+  .chip.incomplete,.chip.too_short{color:var(--warm); border-color:var(--warm)}
+  .chip.conflict{color:var(--hot); border-color:var(--hot)}
+  .note{font-size:13px; color:var(--dim); margin-top:2px}
+  .parts{margin:6px 0 2px 10px; padding-left:10px; border-left:2px solid var(--line)}
+  .part{display:flex; gap:8px; align-items:center; padding:2px 0; font-size:13px}
+  .part .pn{flex:1; min-width:0; word-break:break-all}
+  .links{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:4px; font-size:14px}
+
+  .runrow{display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; flex-wrap:wrap}
+  .warn{background:rgba(255,200,97,.1); border:1px solid var(--warm); color:var(--warm); border-radius:8px; padding:7px 10px; margin:8px 0; font-size:14px}
+  .msg{background:rgba(255,107,107,.08); border:1px solid var(--hot); border-radius:8px; padding:7px 10px; margin:8px 0; font-size:14px}
+  .actions{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .actions label{font-size:13px; color:var(--dim); display:flex; gap:6px; align-items:center}
+  .actions input{width:auto; accent-color:var(--accent)}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">super<span>meet</span> · Kuliah</div>
+  <div class="spacer"></div>
+  <a class="back" href="/">← Rapat live</a>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Upload rekaman</h2>
+    <div id="drop">
+      <p>Tarik file ke sini, atau pilih dari perangkat.<br><span class="small">Audio (.opus, .m4a, .mp3, ...) atau .zip isi banyak rekaman.</span></p>
+      <button id="pick" class="primary">Pilih file</button>
+      <input id="file" type="file" multiple accept="audio/*,.opus,.m4a,.mp3,.wav,.flac,.ogg,.aac,.webm,.zip,application/zip" hidden>
+    </div>
+    <div id="uploads"></div>
+  </div>
+
+  <div class="card" id="unCard" hidden>
+    <h2>Perlu nama <span class="dim small" id="unCount"></span></h2>
+    <div class="small dim" style="margin-bottom:6px">Nama file ini nggak kebaca. Isi keterangannya biar bisa diproses.</div>
+    <div id="unList"></div>
+  </div>
+
+  <div class="card">
+    <h2>Pertemuan</h2>
+    <div id="meetings"><span class="dim">Belum ada rekaman.</span></div>
+    <div class="actions" style="margin-top:14px">
+      <button id="go" class="primary" disabled>Proses 0 pertemuan</button>
+      <label><input type="checkbox" id="force"> Ulang yang sudah ada</label>
+    </div>
+  </div>
+
+  <div class="card" id="runCard" hidden>
+    <h2>Proses</h2>
+    <div id="runBody"></div>
+  </div>
+
+  <div class="card" id="outCard" hidden>
+    <h2>Hasil <span class="dim small" id="outCount"></span><span class="spacer"></span>
+      <a class="small" id="zipAll" href="/kuliah/api/download-zip" download>⬇ Download semua (.zip)</a></h2>
+    <div id="outList"></div>
+  </div>
+
+  <footer class="card">
+    <button id="clean" class="ghost">Bersihkan audio yang udah diproses</button>
+  </footer>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
+    c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fmtDur = s => {
+    if (!s && s !== 0) return "";
+    s = Math.round(s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60);
+    return h ? `${h}j ${m}m` : `${m}m`;
+  };
+  const fmtSize = b => b > 1e9 ? (b/1e9).toFixed(1)+" GB" : b > 1e6 ? (b/1e6).toFixed(1)+" MB" : Math.max(1,Math.round(b/1e3))+" KB";
+  const baseName = p => String(p).split("/").pop();
+  const dlUrl = p => "/kuliah/api/download?path=" + encodeURIComponent(p);
+  const zipUrl = k => "/kuliah/api/download-zip?kode=" + encodeURIComponent(k);
+  const srtLabel = p => { const m = baseName(p).match(/\(bagian (\d+)\)/); return m ? "srt bagian " + m[1] : "srt"; };
+
+  let state = null, expanded = new Set(), busyUploading = false;
+  let formDraft = {};   // unnamed form values survive re-renders
+
+  async function api(method, url, body){
+    const opt = {method, headers:{}};
+    if (body !== undefined){ opt.headers["Content-Type"]="application/json"; opt.body = JSON.stringify(body); }
+    const r = await fetch(url, opt);
+    let data = null; try { data = await r.json(); } catch(e){}
+    if (!r.ok) throw new Error((data && data.detail) || ("Error " + r.status));
+    return data;
+  }
+
+  // ---- upload ----
+  const queue = [];
+  let uploading = false;
+  function addFiles(list){
+    for (const f of list){
+      const row = document.createElement("div"); row.className = "up";
+      row.innerHTML = `<div class="nm">${esc(f.name)} <span class="faint small">${fmtSize(f.size)}</span></div>
+        <div class="bar"><i></i></div><div class="res dim">menunggu…</div>`;
+      $("uploads").prepend(row);
+      queue.push({f, row});
+    }
+    if (!uploading) pump();
+  }
+  async function pump(){
+    uploading = true;
+    while (queue.length){
+      const {f, row} = queue.shift();
+      await uploadOne(f, row);
+    }
+    uploading = false;
+    refresh();
+  }
+  function uploadOne(f, row){
+    return new Promise(resolve => {
+      const bar = row.querySelector(".bar"), fill = bar.firstElementChild, res = row.querySelector(".res");
+      const fail = msg => { bar.classList.add("bad"); res.innerHTML = `<span class="tag-bad">${esc(msg)}</span>`; resolve(); };
+      const x = new XMLHttpRequest();
+      x.open("PUT", "/kuliah/api/upload?name=" + encodeURIComponent(f.name));
+      x.upload.onprogress = e => {
+        if (e.lengthComputable){
+          const p = e.loaded / e.total * 100; fill.style.width = p.toFixed(1)+"%";
+          res.textContent = `mengunggah ${Math.round(p)}%`;
+        }
+      };
+      x.upload.onload = () => { fill.style.width = "100%"; res.textContent = f.name.toLowerCase().endsWith(".zip") ? "mengekstrak…" : "menyimpan…"; };
+      x.onerror = () => fail("Gagal nyambung ke server.");
+      x.ontimeout = () => fail("Waktu habis.");
+      x.onload = () => {
+        let d = null; try { d = JSON.parse(x.responseText); } catch(e){}
+        if (x.status !== 200 || !d) return fail((d && d.detail) || ("Error " + x.status));
+        bar.classList.add("ok");
+        const parts = [];
+        const add = (arr, cls, label) => { if (arr.length) parts.push(`<span class="${cls}" title="${esc(arr.join("\n"))}">${arr.length} ${label}</span>`); };
+        add(d.added, "tag-ok", "masuk");
+        add(d.unnamed, "tag-warm", "perlu nama");
+        add(d.duplicates, "tag-dim", "duplikat");
+        add(d.conflicts, "tag-bad", "konflik");
+        add(d.ignored, "tag-dim", "diabaikan");
+        res.innerHTML = parts.join("") || '<span class="tag-dim">tidak ada isinya</span>';
+        resolve();
+      };
+      x.send(f);
+    });
+  }
+  const drop = $("drop");
+  ["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { if (e.dataTransfer && e.dataTransfer.files.length) addFiles(Array.from(e.dataTransfer.files)); });
+  window.addEventListener("dragover", e => e.preventDefault());
+  window.addEventListener("drop", e => e.preventDefault());
+  $("pick").onclick = () => $("file").click();
+  $("file").onchange = e => { addFiles(Array.from(e.target.files)); e.target.value = ""; };
+
+  // ---- render ----
+  const CHIP = {todo:"Siap", done:"Sudah ada", incomplete:"Belum lengkap", too_short:"Terlalu pendek", conflict:"Konflik"};
+
+  function renderUnnamed(){
+    const un = state.unnamed;
+    $("unCard").hidden = !un.length;
+    $("unCount").textContent = un.length ? `(${un.length})` : "";
+    const active = state.run.active;
+    // Don't clobber a form the user is typing in.
+    const focused = document.activeElement && $("unList").contains(document.activeElement);
+    if (focused) return;
+    const opts = state.matkul.map(m => `<option value="${esc(m.kode)}">${esc(m.kode)}${m.nama ? " – " + esc(m.nama) : ""}</option>`).join("");
+    $("unList").innerHTML = un.map((u, i) => {
+      const d = formDraft[u.file] || {};
+      return `<div class="un" data-i="${i}">
+        <div class="nm">${esc(u.file)} <span class="faint small">${fmtSize(u.size)}</span></div>
+        <div class="form">
+          <select data-f="sel"><option value="">kode…</option>${opts}</select>
+          <input class="kode" data-f="kode" placeholder="kode" maxlength="10" value="${esc(d.kode||"")}" autocapitalize="characters">
+          <label>P <input type="number" data-f="pertemuan" min="1" max="99" inputmode="numeric" value="${esc(d.pertemuan||"")}"></label>
+          <input type="date" data-f="tanggal" value="${esc(d.tanggal||"")}">
+          <label>bagian <input type="number" data-f="bagian" min="1" max="99" inputmode="numeric" value="${esc(d.bagian||"")}">
+          dari <input type="number" data-f="total" min="1" max="99" inputmode="numeric" value="${esc(d.total||"")}"></label>
+          <button data-act="name">Simpan</button>
+          <button class="ghost" data-act="del" ${active?"disabled":""}>Hapus</button>
+        </div>
+        <div class="err" hidden></div></div>`;
+    }).join("");
+  }
+  $("unList").addEventListener("input", e => {
+    const row = e.target.closest(".un"); if (!row) return;
+    const file = state.unnamed[+row.dataset.i].file;
+    const d = formDraft[file] = formDraft[file] || {};
+    const f = e.target.dataset.f;
+    if (f === "sel"){ if (e.target.value){ row.querySelector('[data-f=kode]').value = e.target.value; d.kode = e.target.value; } }
+    else if (f) d[f] = e.target.value;
+  });
+  $("unList").addEventListener("click", async e => {
+    const btn = e.target.closest("button"); if (!btn) return;
+    const row = btn.closest(".un"), file = state.unnamed[+row.dataset.i].file;
+    const err = row.querySelector(".err");
+    err.hidden = true;
+    try {
+      if (btn.dataset.act === "del"){
+        if (!confirm("Hapus " + file + "?")) return;
+        await api("DELETE", "/kuliah/api/upload?file=" + encodeURIComponent("_perlu-nama/" + file));
+      } else {
+        const g = k => row.querySelector(`[data-f=${k}]`).value.trim();
+        await api("POST", "/kuliah/api/name", {
+          file, kode: g("kode"), pertemuan: g("pertemuan"), tanggal: g("tanggal"),
+          bagian: g("bagian") || null, total: g("total") || null});
+      }
+      delete formDraft[file];
+      document.activeElement.blur();
+      refresh();
+    } catch(ex){ err.textContent = ex.message; err.hidden = false; }
+  });
+
+  function renderMeetings(){
+    const ms = state.meetings;
+    if (!ms.length){ $("meetings").innerHTML = '<span class="dim">Belum ada rekaman.</span>'; return; }
+    const groups = {};
+    ms.forEach(m => (groups[m.kode] = groups[m.kode] || []).push(m));
+    const active = state.run.active;
+    $("meetings").innerHTML = Object.keys(groups).sort().map(k => {
+      const g = groups[k].sort((a,b) => a.pertemuan - b.pertemuan);
+      const nama = g.find(m => m.nama);
+      return `<div class="grp"><div class="gh">${esc(k)} ${nama ? `<span class="nama">${esc(nama.nama)}</span>` : ""}</div>` +
+        g.map(m => {
+          const open = expanded.has(m.id);
+          const note = (m.status === "todo" || m.status === "done") ? "" : m.note;
+          const bagian = m.total > 1 ? ` · ${m.parts.length}/${m.total} bagian` : "";
+          return `<div class="mt" data-id="${esc(m.id)}">
+            <div class="row">
+              <div class="main toggle" data-act="toggle">${open ? "▾" : "▸"} <b>P${String(m.pertemuan).padStart(2,"0")}</b>
+                <span class="dim"> · ${esc(m.tanggal)}${m.duration ? " · " + fmtDur(m.duration) : ""}${esc(bagian)}</span></div>
+              <span class="chip ${esc(m.status)}">${esc(CHIP[m.status] || m.status)}</span>
+            </div>
+            ${note ? `<div class="note">${esc(note)}</div>` : ""}
+            ${m.status === "done" && m.outputs.length ? `<div class="links">${m.outputs.map(o => `<a href="${esc(dlUrl(o))}" download>${esc(baseName(o))}</a>`).join("")}</div>` : ""}
+            ${open ? `<div class="parts">${m.parts.map(p => `<div class="part">
+                <span class="pn">${esc(baseName(p.file))}</span>
+                <span class="faint">${p.duration ? fmtDur(p.duration) : ""}${p.short ? " · pendek" : ""}</span>
+                <button class="ghost" data-act="delpart" data-file="${esc(p.file)}" ${active?"disabled":""}>Hapus</button></div>`).join("")}</div>` : ""}
+          </div>`;
+        }).join("") + "</div>";
+    }).join("");
+  }
+  $("meetings").addEventListener("click", async e => {
+    const el = e.target.closest("[data-act]"); if (!el) return;
+    const id = el.closest(".mt").dataset.id;
+    if (el.dataset.act === "toggle"){
+      expanded.has(id) ? expanded.delete(id) : expanded.add(id); renderMeetings();
+    } else if (el.dataset.act === "delpart"){
+      if (!confirm("Hapus file " + baseName(el.dataset.file) + "?")) return;
+      try { await api("DELETE", "/kuliah/api/upload?file=" + encodeURIComponent(el.dataset.file)); refresh(); }
+      catch(ex){ alert(ex.message); }
+    }
+  });
+
+  function renderRun(){
+    const r = state.run;
+    const todo = state.meetings.filter(m => m.status === "todo").length;
+    const force = $("force").checked;
+    $("go").textContent = `Proses ${todo} pertemuan`;
+    $("go").disabled = r.active || (todo === 0 && !(force && state.meetings.some(m => m.status === "done")));
+    $("clean").disabled = r.active;
+
+    const has = r.active || r.done.length || r.failed.length || r.message || r.cancelled;
+    $("runCard").hidden = !has;
+    if (!has) return;
+    let h = "";
+    if (r.active){
+      const c = r.current;
+      const stage = {load:"memuat model", transcribe:"mentranskrip", write:"menulis hasil"}[c && c.stage] || (c && c.stage) || "mulai…";
+      const pct = c ? Math.round((c.fraction || 0) * 100) : 0;
+      h += `<div class="runrow"><span>${c ? "<b>" + esc(c.id) + "</b> · " + esc(stage) : "Menyiapkan…"}</span>
+        <span class="dim">${c && c.index ? esc(c.index) + "/" + esc(c.count) : ""}</span></div>
+        <div class="bar"><i style="width:${pct}%"></i></div>`;
+      if (r.waiting_gpu) h += `<div class="warn">GPU lagi dipakai rekaman live — nunggu…</div>`;
+      h += `<div style="margin-top:10px"><button class="danger" id="cancel">Batalkan</button></div>`;
+    } else {
+      if (r.message) h += `<div class="msg">${esc(r.message)}</div>`;
+      else if (r.cancelled) h += `<div class="msg">Dibatalkan.</div>`;
+    }
+    if (r.done.length){
+      h += `<h3>Selesai</h3>` + r.done.map(d => `<div class="mt"><b>${esc(d.id)}</b>
+        <div class="links">${(d.outputs||[]).map(o => `<a href="${esc(dlUrl(o))}" download>${esc(baseName(o))}</a>`).join("")}</div></div>`).join("");
+    }
+    if (r.failed.length){
+      h += `<h3>Gagal</h3>` + r.failed.map(d => `<div class="mt"><b>${esc(d.id)}</b>
+        <div class="note" style="color:var(--hot)">${esc(d.error)}</div></div>`).join("");
+    }
+    $("runBody").innerHTML = h;
+    const cb = $("cancel"); if (cb) cb.onclick = async () => { cb.disabled = true; try { await api("POST", "/kuliah/api/cancel"); } catch(e){} poll(); };
+  }
+
+  // Every finished transcript, read from the output folder -- stays here after
+  // the uploaded audio is cleaned up, since this page is the only way to fetch it.
+  function renderOutputs(){
+    const os = state.outputs || [];
+    $("outCard").hidden = !os.length;
+    $("outCount").textContent = os.length ? `(${os.length} pertemuan)` : "";
+    const groups = {};
+    os.forEach(o => (groups[o.kode] = groups[o.kode] || []).push(o));
+    $("outList").innerHTML = Object.keys(groups).sort().map(k => {
+      const g = groups[k], nama = g[0].nama;
+      return `<div class="grp"><div class="gh">${esc(k)} ${nama ? `<span class="nama">${esc(nama)}</span>` : ""}
+          <a class="small" style="font-weight:400; margin-left:6px" href="${esc(zipUrl(k))}" download>⬇ zip</a></div>` +
+        g.map(o => `<div class="mt"><div class="row"><b>P${String(o.pertemuan).padStart(2, "0")}</b>
+          <div class="links" style="margin:0">
+            <a href="${esc(dlUrl(o.txt))}" download>Transkrip.txt</a>
+            ${o.srt.map(s => `<a href="${esc(dlUrl(s))}" download>${esc(srtLabel(s))}</a>`).join("")}
+          </div></div></div>`).join("") + "</div>";
+    }).join("");
+  }
+
+  function render(){ renderUnnamed(); renderMeetings(); renderRun(); renderOutputs(); }
+
+  // ---- actions ----
+  $("force").onchange = () => state && renderRun();
+  $("go").onclick = async () => {
+    $("go").disabled = true;
+    try { await api("POST", "/kuliah/api/run", {force: $("force").checked}); }
+    catch(e){ alert(e.message); }
+    refresh();
+  };
+  $("clean").onclick = async () => {
+    if (!confirm("Hapus file audio dari pertemuan yang udah selesai diproses? Hasil transkrip tetap aman.")) return;
+    try { const d = await api("POST", "/kuliah/api/cleanup"); alert(d.deleted + " file dihapus."); }
+    catch(e){ alert(e.message); }
+    refresh();
+  };
+
+  // ---- polling ----
+  let timer = null, inflight = false;
+  async function refresh(){
+    if (inflight) return; inflight = true;
+    try { state = await api("GET", "/kuliah/api/state"); render(); }
+    catch(e){ /* server may be restarting; try again next tick */ }
+    inflight = false;
+    schedule();
+  }
+  async function poll(){
+    if (inflight) return; inflight = true;
+    try {
+      const run = await api("GET", "/kuliah/api/run");
+      const was = state && state.run.active;
+      if (state) state.run = run;
+      if (was && !run.active){ inflight = false; return refresh(); }
+      if (state) renderRun();
+    } catch(e){}
+    inflight = false;
+    schedule();
+  }
+  function schedule(){
+    clearTimeout(timer);
+    const active = state && state.run.active;
+    timer = setTimeout(active ? poll : refresh, active ? 1500 : 5000);
+  }
+  refresh();
+})();
+</script>
+</body>
+</html>
